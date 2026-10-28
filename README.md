@@ -70,7 +70,7 @@ Si repites sin cambiar ningún input, ComfyUI puede reutilizar la caché y no ej
 
 Validado el 28 de octubre de 2026:
 
-- 14 pruebas Python: JSON completo y Unicode, píxeles RGB/RGBA, batches, ausencia de escrituras de imágenes en servidor, nombres únicos, formato de fecha, zona de Ciudad de México y nombres válidos para Windows.
+- 15 pruebas Python: JSON completo y Unicode, píxeles RGB/RGBA, batches, ausencia de escrituras de imágenes en servidor, nombres únicos, formato de fecha, zona de Ciudad de México y nombres válidos para Windows, incluido texto Unicode en fechas de Python antiguos para Windows.
 - Comparación con la clase real Save Image de ComfyUI: seis PNG tienen los mismos metadatos y píxeles, con metadatos activados y desactivados.
 - Firefox 153.0 en Windows mediante Playwright: nueve descargas reales en un iframe de otro origen, incluyendo pantalla completa y vuelta al modo normal, sin recargar el iframe. Los ocho PNG principales coinciden byte por byte con los enviados por Python. También se prueba registrar la extensión dos veces, seleccionar la vista previa correcta y descargar después de retirar el nodo del grafo.
 

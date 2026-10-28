@@ -167,6 +167,17 @@ class MetadataTests(unittest.TestCase):
         name = server.events[0][1]["filename"]
         self.assertLess(len(name.encode("utf-16-le")) // 2, 256)
 
+    def test_unicode_timestamp_on_older_windows_python(self):
+        class OldWindowsDateTime(datetime.datetime):
+            def strftime(self, pattern):
+                if any(ord(char) > 127 for char in pattern):
+                    raise UnicodeEncodeError("locale", pattern, 0, 1, "encoding error")
+                return super().strftime(pattern)
+
+        now = OldWindowsDateTime(2026, 10, 28, 3, 4, 5, 123456)
+        self.assertEqual(node_module.format_timestamp(now, "🌵_%Y-%m-%d_%H-%M-%S_%f_%%Y"),
+                         "🌵_2026-10-28_03-04-05_123456_%Y")
+
     def test_encoding_does_not_write_server_files(self):
         with patch("builtins.open", side_effect=AssertionError("Unexpected disk write")):
             self.node.transmit_to_client(self.batch, "memory", self.prompt, {"workflow": self.workflow})

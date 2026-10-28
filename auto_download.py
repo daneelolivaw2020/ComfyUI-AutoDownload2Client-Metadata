@@ -19,6 +19,16 @@ def filename_part(value, fallback, limit):
     return value or fallback
 
 
+def format_timestamp(now, pattern):
+    try:
+        return now.strftime(pattern)
+    except UnicodeEncodeError:
+        # Older Windows Python cannot pass emoji literals to strftime.
+        # Format the ASCII directives separately and preserve Unicode literals.
+        return re.sub(r"%[-_0^#]*\d*[EO]?[A-Za-z%]",
+                      lambda token: now.strftime(token.group()), pattern)
+
+
 class AutoDownloadNode:
 
     @classmethod
@@ -59,7 +69,7 @@ class AutoDownloadNode:
                 "America/Mexico_City or UTC; install tzdata if the system has no zone database."
             ) from exc
         now = datetime.datetime.now(tz)
-        timestamp = filename_part(now.strftime(timestamp_format), "", 80) if timestamp_format else ""
+        timestamp = filename_part(format_timestamp(now, timestamp_format), "", 80) if timestamp_format else ""
         # One UUID per execution plus the index distinguishes batches and simultaneous runs.
         download_id = uuid.uuid4().hex
         metadata = None
