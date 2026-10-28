@@ -46,8 +46,20 @@ stubs = {
 }
 spec = importlib.util.spec_from_file_location("auto_download_under_test", ROOT / "auto_download.py")
 node_module = importlib.util.module_from_spec(spec)
-with patch.dict(sys.modules, stubs):
+# Restore only our ComfyUI stubs. patch.dict(sys.modules) also removes newly
+# imported C extension modules (notably _zoneinfo), invalidating their state
+# on otherwise clean Python installations.
+missing = object()
+original_modules = {name: sys.modules.get(name, missing) for name in stubs}
+sys.modules.update(stubs)
+try:
     spec.loader.exec_module(node_module)
+finally:
+    for name, original in original_modules.items():
+        if original is missing:
+            sys.modules.pop(name, None)
+        else:
+            sys.modules[name] = original
 
 
 class MetadataTests(unittest.TestCase):
