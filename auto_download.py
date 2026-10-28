@@ -7,9 +7,14 @@ import datetime
 import json
 import re
 import uuid
+from itertools import count
+from threading import Lock
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 from comfy.cli_args import args
 from server import PromptServer
+
+_filename_counter = count(1)
+_filename_counter_lock = Lock()
 
 def filename_part(value, fallback, limit):
     """A download is one Windows filename, never a server/client path."""
@@ -70,7 +75,7 @@ class AutoDownloadNode:
             ) from exc
         now = datetime.datetime.now(tz)
         timestamp = filename_part(format_timestamp(now, timestamp_format), "", 80) if timestamp_format else ""
-        # One UUID per execution plus the index distinguishes batches and simultaneous runs.
+        # This ID groups browser previews; keep it out of the visible filename.
         download_id = uuid.uuid4().hex
         metadata = None
         if not args.disable_metadata:
@@ -91,7 +96,10 @@ class AutoDownloadNode:
             img_base64 = base64.b64encode(img_bytes).decode('utf-8')
 
             prefix = filename_part(filename_prefix.replace("%batch_num%", str(index)), "ComfyUI2Client", 100)
-            parts = [prefix, timestamp, download_id, f"{index + 1:05d}"]
+            # Shared across nodes and executions, including identical timestamps.
+            with _filename_counter_lock:
+                counter = next(_filename_counter)
+            parts = [prefix, timestamp, f"{counter:05d}"]
             PromptServer.instance.send_sync("auto_download_direct", {
                 "data": img_base64,
                 "filename": "_".join(part for part in parts if part) + ".png",

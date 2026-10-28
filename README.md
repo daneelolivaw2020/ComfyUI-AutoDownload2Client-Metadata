@@ -9,7 +9,7 @@ Basado en [ComfyUI-AutoDownload2Client de iwindy910](https://github.com/iwindy91
 - El PNG incorpora `prompt` y todos los campos de `extra_pnginfo`, incluido `workflow`, mediante `PngInfo` y `json.dumps`, igual que [Save Image](https://github.com/comfyanonymous/ComfyUI/blob/e1df394db644987bfbdd05c887a78b9115d49261/nodes.py#L1670).
 - Se mantiene el transporte original: PNG en memoria → Base64 por WebSocket → Blob → descarga de Firefox. Se descargan los bytes originales, sin recodificar en un canvas. El nodo no guarda imágenes en Colab ni en Google Drive.
 - Fecha configurable con `America/Mexico_City` por defecto, independientemente del reloj del servidor o navegador.
-- Nombres con UUID completo por ejecución e índice de imagen para distinguir batches y ejecuciones simultáneas.
+- Nombres legibles con un contador compartido entre nodos, batches y ejecuciones, sin cadenas aleatorias visibles.
 - Eventos dirigidos al cliente que ejecutó el workflow; vista previa asociada al ID del nodo, con batches y prefijos con guiones bajos.
 
 ## Instalación en Colab
@@ -45,9 +45,11 @@ Comodines: `%Y` año de cuatro cifras, `%y` año de dos, `%m` mes, `%d` día, `%
 Ejemplo con prefijo `Luis`:
 
 ```text
-Luis_2026-10-27_21-04-05_6434e8bfb8954b9fa46bdc97c2e78ef3_00001.png
-Luis_2026-10-27_21-04-05_6434e8bfb8954b9fa46bdc97c2e78ef3_00002.png
+Luis_2026-10-27_21-04-05_00001.png
+Luis_2026-10-27_21-04-05_00002.png
 ```
+
+El contador avanza por imagen durante la sesión de ComfyUI, también entre batches, nodos y ejecuciones simultáneas con la misma fecha. Se reinicia al reiniciar el servidor; los archivos existentes de otras sesiones quedan sujetos al manejo de nombres repetidos de Firefox. El UUID se conserva únicamente como identificador interno de las vistas previas.
 
 Los caracteres incompatibles con Windows se sustituyen por `_`; se limita la longitud. El prefijo no selecciona una carpeta: la carpeta la controla Firefox.
 
@@ -70,7 +72,7 @@ Si repites sin cambiar ningún input, ComfyUI puede reutilizar la caché y no ej
 
 Validado el 28 de octubre de 2026:
 
-- 15 pruebas Python: JSON completo y Unicode, píxeles RGB/RGBA, batches, ausencia de escrituras de imágenes en servidor, nombres únicos, formato de fecha, zona de Ciudad de México y nombres válidos para Windows, incluido texto Unicode en fechas de Python antiguos para Windows.
+- 17 pruebas Python: JSON completo y Unicode, píxeles RGB/RGBA, batches, ausencia de escrituras de imágenes en servidor, nombres legibles y únicos entre nodos simultáneos, formato de fecha, zona de Ciudad de México y nombres válidos para Windows, incluido texto Unicode en fechas de Python antiguos para Windows.
 - Comparación con la clase real Save Image de ComfyUI: seis PNG tienen los mismos metadatos y píxeles, con metadatos activados y desactivados.
 - Firefox 153.0 en Windows mediante Playwright: nueve descargas reales en un iframe de otro origen, incluyendo pantalla completa y vuelta al modo normal, sin recargar el iframe. Los ocho PNG principales coinciden byte por byte con los enviados por Python. También se prueba registrar la extensión dos veces, seleccionar la vista previa correcta y descargar después de retirar el nodo del grafo.
 

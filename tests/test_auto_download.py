@@ -9,6 +9,8 @@ import sys
 import types
 import datetime
 import unittest
+from itertools import count
+from concurrent.futures import ThreadPoolExecutor
 from unittest.mock import patch
 
 import numpy as np
@@ -64,6 +66,9 @@ finally:
 
 class MetadataTests(unittest.TestCase):
     def setUp(self):
+        counter_patch = patch.object(node_module, "_filename_counter", count(1))
+        counter_patch.start()
+        self.addCleanup(counter_patch.stop)
         server.events.clear()
         args.disable_metadata = False
         self.node = node_module.AutoDownloadNode()
@@ -126,6 +131,30 @@ class MetadataTests(unittest.TestCase):
         self.assertEqual(len(set(names)), 8)
         self.assertTrue(names[0].endswith("_00001.png"))
         self.assertTrue(names[3].endswith("_00004.png"))
+        self.assertEqual(names, [f"Luis_batch_{i:05d}.png" for i in range(1, 9)])
+
+    def test_clean_filename_has_date_and_counter_without_uuid(self):
+        class FixedDateTime(datetime.datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return cls(2026, 10, 28, 0, 35, 50, tzinfo=tz)
+
+        with patch.object(node_module.datetime, "datetime", FixedDateTime):
+            for _ in range(2):
+                node_module.AutoDownloadNode().transmit_to_client(self.batch * 2, "ComfyUI2Client")
+        self.assertEqual([e[1]["filename"] for e in server.events], [
+            f"ComfyUI2Client_2026-10-28_00-35-50_{i:05d}.png" for i in range(1, 5)])
+        # Preview grouping still uses a distinct internal ID for each execution.
+        self.assertNotEqual(server.events[0][1]["download_id"], server.events[2][1]["download_id"])
+
+    def test_concurrent_nodes_share_unique_filename_counter(self):
+        def run(_):
+            node_module.AutoDownloadNode().transmit_to_client(self.batch * 3, "parallel", timestamp_format="")
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            list(pool.map(run, range(8)))
+        self.assertEqual({e[1]["filename"] for e in server.events},
+                         {f"parallel_{i:05d}.png" for i in range(1, 25)})
 
     def test_mexico_city_date_independent_of_server_timezone(self):
         class FixedDateTime(datetime.datetime):
