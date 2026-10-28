@@ -1,0 +1,13 @@
+ComfyUI-AutoDownload2Client-Metadata
+
+Based on ComfyUI-AutoDownload2Client by iwindy910:
+https://github.com/iwindy910/ComfyUI-AutoDownload2Client
+Upstream baseline: 6fad00fa4361d2386a1fdb5679f2bbd24eec8342
+
+Modified 2026-10-28 for daneelolivaw2020:
+- Native ComfyUI prompt/extra_pnginfo PNG metadata in memory.
+- Configurable IANA time zones, strftime timestamps and unique batch filenames.
+- Client-scoped events, node-ID previews and batch preview handling.
+- Regression tests, Firefox iframe tests and installation documentation.
+
+Original Apache License 2.0 retained in LICENSE.
